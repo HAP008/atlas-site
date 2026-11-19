@@ -72,12 +72,16 @@ describe("parseWaitlistEndpoint", () => {
     expect(parseWaitlistEndpoint("")).toBeNull();
     expect(parseWaitlistEndpoint("   ")).toBeNull();
   });
-  it("accepts https and local http", () => {
-    expect(parseWaitlistEndpoint(ENDPOINT)).toBe(ENDPOINT);
+  it("accepts https on the form service named in the Privacy Policy, and local http for testing", () => {
+    expect(parseWaitlistEndpoint("https://formspree.io/f/test123")).toBe("https://formspree.io/f/test123");
     expect(parseWaitlistEndpoint("http://localhost:4010/ok")).toBe("http://localhost:4010/ok");
   });
   it("fails loudly on a bad value", () => {
     expect(() => parseWaitlistEndpoint("not a url")).toThrow(/not a valid URL/);
-    expect(() => parseWaitlistEndpoint("http://forms.test.invalid/f/abc")).toThrow(/https/);
+    expect(() => parseWaitlistEndpoint("http://formspree.io/f/test123")).toThrow(/https/);
+  });
+  it("refuses any other host, so data can't silently go somewhere the Privacy Policy doesn't name", () => {
+    expect(() => parseWaitlistEndpoint(ENDPOINT)).toThrow(/must be on formspree\.io/);
+    expect(() => parseWaitlistEndpoint("https://formspree.io.evil.test/f/x")).toThrow(/must be on formspree\.io/);
   });
 });

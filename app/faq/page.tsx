@@ -20,12 +20,15 @@ export default function FaqPage() {
       />
 
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
-        {/* Native <details>: keyboard and screen-reader friendly, and works without JavaScript. */}
+        {/* Native <details>: keyboard and screen-reader friendly, and works without JavaScript.
+            Headings inside <summary> drop out of the accessibility tree, so the section gets one
+            heading here and each question is the summary's own text. */}
+        <h2 className="sr-only">Questions</h2>
         <div className="divide-y divide-border border-y border-border">
           {faq.map((item) => (
             <details key={item.id} id={item.id} className="group scroll-mt-24">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 [&::-webkit-details-marker]:hidden">
-                <h2 className="font-sans text-lg font-medium">{item.question}</h2>
+                <span className="text-lg font-medium">{item.question}</span>
                 <span
                   aria-hidden="true"
                   className="text-2xl leading-none text-primary transition-transform group-open:rotate-45"

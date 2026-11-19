@@ -22,7 +22,7 @@ export function SiteFooter() {
             <p>
               <a
                 href={`mailto:${siteConfig.contactEmail}`}
-                className="break-all text-foreground underline decoration-border underline-offset-4 hover:decoration-primary"
+                className="[overflow-wrap:anywhere] text-foreground underline decoration-border underline-offset-4 hover:decoration-primary"
               >
                 {siteConfig.contactEmail}
               </a>

@@ -13,6 +13,7 @@
 
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -41,7 +42,7 @@ function ContactEmail() {
   return (
     <a
       href={`mailto:${siteConfig.contactEmail}`}
-      className="font-medium break-all underline underline-offset-4"
+      className="font-medium [overflow-wrap:anywhere] underline underline-offset-4"
     >
       {siteConfig.contactEmail}
     </a>
@@ -60,7 +61,8 @@ export function WaitlistForm({
   const ageId = `${id}-age`;
   const emailErrorId = `${id}-email-error`;
   const ageErrorId = `${id}-age-error`;
-  const honeypotId = `${id}-website`;
+  // Neutral id so password managers and autofill don't mistake the honeypot for a real field.
+  const honeypotId = `${id}-hp`;
 
   const [email, setEmail] = useState("");
   const [ageConfirmed, setAgeConfirmed] = useState(false);
@@ -123,7 +125,9 @@ export function WaitlistForm({
     if (!email.trim()) errors.email = MESSAGES.emailMissing;
     else if (!isValidEmail(email)) errors.email = MESSAGES.emailInvalid;
     if (!ageConfirmed) errors.age = MESSAGES.ageMissing;
-    setFieldErrors(errors);
+    // Commit the errors before moving focus, so the field already has aria-invalid and its
+    // error description when a screen reader announces it.
+    flushSync(() => setFieldErrors(errors));
 
     if (errors.email) {
       emailRef.current?.focus();
@@ -147,8 +151,10 @@ export function WaitlistForm({
         setStatus("success");
         return;
       case "invalid-email":
-        setStatus("idle");
-        setFieldErrors({ email: MESSAGES.emailRejected });
+        flushSync(() => {
+          setStatus("idle");
+          setFieldErrors({ email: MESSAGES.emailRejected });
+        });
         emailRef.current?.focus();
         return;
       case "rate-limited":
@@ -163,6 +169,10 @@ export function WaitlistForm({
 
   return (
     <form
+      // If someone submits before JavaScript loads, the browser posts straight to the form
+      // service (never a GET to our own page, which would put the email in a URL and in logs).
+      method="post"
+      action={endpoint}
       noValidate
       onSubmit={handleSubmit}
       aria-busy={submitting}
@@ -230,7 +240,18 @@ export function WaitlistForm({
       {/* Honeypot. Hidden from people and screen readers; bots tend to fill every field. */}
       <div aria-hidden="true" className="absolute -left-[10000px] h-px w-px overflow-hidden">
         <label htmlFor={honeypotId}>Leave this field empty</label>
-        <input ref={honeypotRef} id={honeypotId} name="_gotcha" type="text" tabIndex={-1} autoComplete="off" />
+        {/* data-* attributes tell 1Password, LastPass and similar tools to leave it alone. */}
+        <input
+          ref={honeypotRef}
+          id={honeypotId}
+          name="_gotcha"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          data-1p-ignore=""
+          data-lpignore="true"
+          data-form-type="other"
+        />
       </div>
 
       <p className="text-[0.8125rem] leading-relaxed text-muted-foreground">

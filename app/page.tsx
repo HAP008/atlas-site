@@ -5,6 +5,10 @@ import { HeroIllustration } from "@/components/hero-illustration";
 import { RichText } from "@/components/rich-text";
 import { Waitlist } from "@/components/waitlist";
 import { home } from "@/content/home";
+import { siteConfig } from "@/site.config";
+
+// Only the canonical here: the layout's title, description and social image still apply.
+export const metadata = { alternates: { canonical: `${siteConfig.siteUrl}/` } };
 
 const ICONS = { plug: Plug, inbox: Inbox, shield: ShieldCheck } as const;
 

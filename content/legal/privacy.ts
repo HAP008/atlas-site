@@ -101,7 +101,8 @@ export const privacy: LegalDoc = {
       id: "how-long",
       heading: "How long we keep it",
       blocks: [
-        `We keep your waitlist email address until we've sent the launch announcement, then delete it within ${days} days. If you ask us to delete it sooner, we do that within ${days} days of your request, from both ${siteConfig.waitlistService.name} and our inbox.`,
+        `${siteConfig.waitlistService.name} emails each sign-up to our inbox. We delete it from ${siteConfig.waitlistService.name} within ${days} days of it arriving, so the copy in our inbox is the only one we keep. ${siteConfig.waitlistService.name} may keep its own technical logs under its privacy policy.`,
+        `We keep your waitlist email address until we've sent the launch announcement, then delete it within ${days} days. If you ask us to delete it sooner, we do that within ${days} days of your request. Deleting includes emptying it from our email trash.`,
         "We keep emails you send us for as long as we need them to help you, then delete them.",
       ],
     },

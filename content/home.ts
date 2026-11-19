@@ -30,7 +30,8 @@ export const home = {
     },
   ],
 
-  privacyTitle: "Your data stays on your Mac.",
+  // The heading names both halves, per CLAUDE.md §7.5: local data, and requests that go to the AI provider.
+  privacyTitle: "What stays on your Mac, and what doesn't.",
   privacy: [
     "ATLAS runs on your own Mac, and we don't receive your data: not your email, your files or your conversations.",
     "One thing does leave your Mac. What you ask ATLAS, and anything it needs to answer (for example, the text of an email you ask about), goes to the AI provider you connect: Anthropic for Claude, or OpenAI for ChatGPT. They handle it under their own terms.",

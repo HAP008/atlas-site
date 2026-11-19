@@ -49,7 +49,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang={siteConfig.locale} className={display.variable}>
+    // data-scroll-behavior: Next 16 only turns off our CSS smooth scrolling during route changes
+    // when this is set; without it, new pages can land scrolled past the header.
+    <html lang={siteConfig.locale} className={display.variable} data-scroll-behavior="smooth">
       <body className="flex min-h-dvh flex-col">
         <a
           href="#main"

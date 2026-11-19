@@ -31,6 +31,8 @@ export const siteConfig = {
   /** The form service, named in the Privacy Policy. Update together with the endpoint. */
   waitlistService: {
     name: "Formspree",
+    /** The only host the waitlist endpoint may use (enforced at build in lib/waitlist-endpoint.ts). */
+    host: "formspree.io",
     privacyUrl: "https://formspree.io/legal/privacy-policy/",
   },
   host: {

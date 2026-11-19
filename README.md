@@ -1,8 +1,8 @@
 # ATLAS site
 
-Public website for ATLAS, a local-first personal AI assistant for Mac. Static Next.js export, hosted on GitHub Pages.
+Public website for ATLAS, a local-first personal AI assistant for Mac. Static Next.js export, hosted on GitHub Pages at https://hap008.github.io/atlas-site/.
 
-This repo is the website only. The app and licence service live in a separate private repo.
+This repo is the website only. The app and licence service live in a separate private repo. Never put app code, keys or customer data here: this repo is public.
 
 ## Docs
 - `CLAUDE.md`: rules for Claude Code sessions
@@ -11,12 +11,43 @@ This repo is the website only. The app and licence service live in a separate pr
 - `docs/CONTENT-RULES.md`: voice and what we may claim
 - `PROGRESS.md`: current state
 
-## Run
+## Run locally
+Needs Node 24 or newer.
 ```
 npm install
-cp .env.example .env.local
-npm run dev
+cp .env.example .env.local   # leave the value empty to see the "not connected yet" state
+npm run dev                  # http://localhost:3000/atlas-site/
 ```
-Build the static export with `npm run build`.
+
+## Checks (all run in CI before every deploy)
+```
+npm run lint            # ESLint
+npm run typecheck       # tsc --noEmit
+npm test                # Vitest: waitlist form states, source rules (no console, no any, no trackers)
+npm run build           # static export into ./out
+npm run check:export    # every internal link/anchor resolves, legal pages marked draft, no third-party scripts
+npm run verify          # all of the above in order
+```
+
+## Where things live
+- `site.config.ts`: name, tagline, contact email, site URL (base path derives from it), waitlist env var name, PLACEHOLDER pricing
+- `content/`: all page copy as typed data, including the legal drafts in `content/legal/`
+- `components/waitlist-form.tsx` + `lib/waitlist.ts`: the only network call the site makes
+
+## Connect the waitlist (Formspree)
+1. Create a free form at formspree.io, sending to huzaifapardiwala@gmail.com. Copy its endpoint (`https://formspree.io/f/…`).
+2. In the form's settings: turn on **Restrict to domain** with `hap008.github.io` (stops other sites reusing the endpoint; update it when the domain changes) and keep spam filtering on.
+3. GitHub → repo Settings → Secrets and variables → Actions → **Variables** → New variable: `NEXT_PUBLIC_WAITLIST_ENDPOINT` = that URL. (A variable, not a secret: it ends up in public JavaScript anyway.) The build refuses any host other than `formspree.io`, because the Privacy Policy names Formspree.
+4. Re-run the "Deploy site to GitHub Pages" workflow. Without the variable, the site shows "The waitlist isn't connected yet."
+5. Submit one real test sign-up from the live site and check it arrives in Gmail.
+
+### Waitlist data routine (the Privacy Policy promises this)
+- Formspree's free plan: 50 sign-ups a month, and the dashboard only shows the last 30 days. **Delete each sign-up from Formspree within 30 days**; the copy in Gmail is the list.
+- Deletion requests: delete from Gmail and empty Gmail's trash within 30 days.
+- At launch: email only sign-ups that have `age_confirmed=yes`, then delete the list within 30 days.
+- Nobody confirms their address (no double opt-in), so the launch email should say "you, or someone using your address, asked to hear about ATLAS; reply and we'll delete it."
+
+## Move to a real domain
+Change `SITE_URL` in `site.config.ts` (one line). The base path, sitemap, robots and social image URLs follow.
 
 Contact: huzaifapardiwala@gmail.com

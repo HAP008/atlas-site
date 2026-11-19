@@ -78,6 +78,30 @@ describe("WaitlistForm", () => {
     expect(ctx.submit()).toHaveFocus();
   });
 
+  it("without JavaScript, a native submit POSTs to the form service, never a GET to our own page", () => {
+    setup();
+    const form = screen.getByRole("form");
+    expect(form).toHaveAttribute("method", "post");
+    expect(form).toHaveAttribute("action", ENDPOINT);
+  });
+
+  it("the field is already marked invalid, with its error, at the moment it receives focus", async () => {
+    const ctx = setup();
+    const atFocus: { invalid: string | null; describedBy: string | null; errorInDom: boolean }[] = [];
+    ctx.age().addEventListener("focus", (e) => {
+      const el = e.currentTarget as HTMLElement;
+      const describedBy = el.getAttribute("aria-describedby");
+      atFocus.push({
+        invalid: el.getAttribute("aria-invalid"),
+        describedBy,
+        errorInDom: !!(describedBy && document.getElementById(describedBy)),
+      });
+    });
+    await ctx.user.type(ctx.email(), EMAIL);
+    await ctx.user.click(ctx.submit());
+    expect(atFocus.at(-1)).toEqual({ invalid: "true", describedBy: expect.any(String), errorInDom: true });
+  });
+
   it("unchecked 18+ box: blocks the submit, explains why, focuses the checkbox", async () => {
     const ctx = setup();
     await ctx.user.type(ctx.email(), EMAIL);
@@ -168,6 +192,9 @@ describe("WaitlistForm", () => {
     const honeypot = document.querySelector<HTMLInputElement>('input[name="_gotcha"]');
     expect(honeypot).not.toBeNull();
     expect(honeypot).toHaveAttribute("tabindex", "-1");
+    expect(honeypot).toHaveAttribute("data-1p-ignore");
+    expect(honeypot).toHaveAttribute("data-lpignore", "true");
+    expect(honeypot?.id).not.toMatch(/website|url|name|email/i);
     expect(honeypot?.closest('[aria-hidden="true"]')).not.toBeNull();
 
     honeypot!.value = "https://spam.test.invalid";

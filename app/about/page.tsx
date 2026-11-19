@@ -31,7 +31,7 @@ export default function AboutPage() {
             <RichText value={about.contact} />
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            As plain text: <span className="font-mono break-all text-foreground">{siteConfig.contactEmail}</span>
+            As plain text: <span className="font-mono [overflow-wrap:anywhere] text-foreground">{siteConfig.contactEmail}</span>
           </p>
         </div>
       </section>

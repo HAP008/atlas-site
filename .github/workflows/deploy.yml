@@ -20,8 +20,12 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The build never pushes, so don't leave the token in .git/config.
+          persist-credentials: false
 
       - uses: actions/setup-node@v7
         with:
@@ -29,6 +33,9 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Audit shipped dependencies (fails on high or critical)
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Lint
         run: npm run lint
@@ -57,6 +64,7 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       pages: write
       id-token: write
