@@ -62,6 +62,22 @@ describe("WaitlistForm", () => {
     expect(ctx.submit()).toHaveTextContent("Join the waitlist");
   });
 
+  it("keyboard: Tab goes email → 18+ box → Terms → Privacy → submit, skipping the honeypot; Space ticks the box", async () => {
+    const ctx = setup();
+    await ctx.user.tab();
+    expect(ctx.email()).toHaveFocus();
+    await ctx.user.tab();
+    expect(ctx.age()).toHaveFocus();
+    await ctx.user.keyboard(" ");
+    expect(ctx.age()).toBeChecked();
+    await ctx.user.tab();
+    expect(screen.getByRole("link", { name: "Terms" })).toHaveFocus();
+    await ctx.user.tab();
+    expect(screen.getByRole("link", { name: "Privacy Policy" })).toHaveFocus();
+    await ctx.user.tab();
+    expect(ctx.submit()).toHaveFocus();
+  });
+
   it("unchecked 18+ box: blocks the submit, explains why, focuses the checkbox", async () => {
     const ctx = setup();
     await ctx.user.type(ctx.email(), EMAIL);

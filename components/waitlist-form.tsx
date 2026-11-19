@@ -22,6 +22,10 @@ import { isValidEmail, submitToWaitlist, type WaitlistResult } from "@/lib/waitl
 import { siteConfig } from "@/site.config";
 
 type Status = "idle" | "submitting" | "success" | "error";
+
+// shadcn's soft focus ring is hard to see next to the red error ring; use the site's solid outline.
+const FOCUS_OUTLINE =
+  "focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-ring";
 type FieldErrors = { email?: string; age?: string };
 
 const MESSAGES = {
@@ -30,7 +34,7 @@ const MESSAGES = {
   emailRejected: "The waitlist didn't accept that email address. Check it and try again.",
   ageMissing: "Please confirm you're 18 or older. ATLAS is for adults only.",
   rateLimited: "Too many tries in a short time. Wait a minute, then try again.",
-  failed: "Your email didn't go through. Check your connection and try again.",
+  failed: "Your sign-up didn't go through. Check your connection and try again.",
 } as const;
 
 function ContactEmail() {
@@ -169,8 +173,7 @@ export function WaitlistForm({
         <Label htmlFor={emailId} className="text-sm font-medium">
           Email address
         </Label>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Input
+        <Input
             ref={emailRef}
             id={emailId}
             name="email"
@@ -188,16 +191,8 @@ export function WaitlistForm({
               setEmail(e.target.value);
               if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
             }}
-            className="h-12 rounded-full bg-card px-5 text-base sm:flex-1"
+            className="h-12 rounded-full bg-card px-5 text-base"
           />
-          <Button
-            type="submit"
-            aria-disabled={submitting || undefined}
-            className="h-12 rounded-full px-6 text-base aria-disabled:opacity-70"
-          >
-            {submitting ? "Joining…" : "Join the waitlist"}
-          </Button>
-        </div>
         {fieldErrors.email && (
           <p id={emailErrorId} className="text-sm text-destructive">
             {fieldErrors.email}
@@ -219,7 +214,7 @@ export function WaitlistForm({
             aria-required="true"
             aria-invalid={fieldErrors.age ? true : undefined}
             aria-describedby={fieldErrors.age ? ageErrorId : undefined}
-            className="mt-0.5 size-5 border-input"
+            className={cn("mt-0.5 size-5 border-input", FOCUS_OUTLINE)}
           />
           <Label htmlFor={ageId} className="text-sm leading-snug font-normal">
             I&apos;m 18 or older.
@@ -238,7 +233,7 @@ export function WaitlistForm({
         <input ref={honeypotRef} id={honeypotId} name="_gotcha" type="text" tabIndex={-1} autoComplete="off" />
       </div>
 
-      <p className="text-xs leading-relaxed text-muted-foreground">
+      <p className="text-[0.8125rem] leading-relaxed text-muted-foreground">
         We&apos;ll only use your email to tell you when ATLAS launches. By joining, you agree to the{" "}
         <Link href="/terms/" className="underline underline-offset-4 hover:text-foreground">
           Terms
@@ -249,6 +244,15 @@ export function WaitlistForm({
         </Link>
         .
       </p>
+
+      {/* Submit comes last so keyboard focus order matches reading order: email → 18+ → submit. */}
+      <Button
+        type="submit"
+        aria-disabled={submitting || undefined}
+        className={cn("h-12 w-full rounded-full px-7 text-base aria-disabled:opacity-70 sm:w-auto", FOCUS_OUTLINE)}
+      >
+        {submitting ? "Joining…" : "Join the waitlist"}
+      </Button>
 
       {/* Always in the DOM so screen readers announce the message when it appears. */}
       <div role="alert">

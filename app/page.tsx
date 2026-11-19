@@ -13,7 +13,8 @@ export default function Home() {
     <>
       {/* Hero: what ATLAS is, for whom, and the waitlist, all above the fold. */}
       <section className="relative overflow-hidden border-b border-border/60">
-        <ContourLines className="pointer-events-none absolute inset-0 h-full w-full text-contour" />
+        {/* Fade the lines away from the text column so copy stays easy to read. */}
+        <ContourLines className="pointer-events-none absolute inset-0 h-full w-full text-contour opacity-70 [mask-image:linear-gradient(to_bottom,transparent_20%,black_75%)] lg:opacity-100 lg:[mask-image:linear-gradient(to_right,transparent_25%,black_60%)]" />
         <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 pt-12 pb-16 sm:px-6 sm:pt-20 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:pb-24">
           <div>
             <p className="text-sm font-medium tracking-wide text-primary">{home.eyebrow}</p>

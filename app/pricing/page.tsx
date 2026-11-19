@@ -24,6 +24,7 @@ export default function PricingPage() {
     <>
       <PageHeader
         eyebrow="Pricing"
+        width="max-w-6xl"
         title="Three plans. Subscription only."
         intro={
           <p>

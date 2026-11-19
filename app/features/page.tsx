@@ -14,7 +14,7 @@ export const metadata = pageMetadata({
 export default function FeaturesPage() {
   return (
     <>
-      <PageHeader eyebrow={features.eyebrow} title={features.title} intro={<p>{features.intro}</p>} />
+      <PageHeader width="max-w-5xl" eyebrow={features.eyebrow} title={features.title} intro={<p>{features.intro}</p>} />
 
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
         <MediaSlot media={features.demo} className="aspect-video" />

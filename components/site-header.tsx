@@ -1,13 +1,12 @@
 /**
  * SiteHeader: wordmark, main nav and the waitlist call to action.
- * On small screens the nav folds into a native <details> menu, so it works
- * by keyboard and without JavaScript.
- * Depends on: lib/routes.ts, components/nav-links.tsx.
+ * On small screens the nav folds into components/mobile-menu.tsx.
+ * Depends on: lib/routes.ts, components/nav-links.tsx, components/mobile-menu.tsx.
  */
 
 import Link from "next/link";
-import { Menu } from "lucide-react";
 import { Wordmark } from "@/components/logo";
+import { MobileMenu } from "@/components/mobile-menu";
 import { NavLinks } from "@/components/nav-links";
 import { mainNav } from "@/lib/routes";
 
@@ -31,22 +30,7 @@ export function SiteHeader() {
             Join the waitlist
           </Link>
 
-          <details className="group relative md:hidden">
-            <summary className="flex size-10 list-none items-center justify-center rounded-full border border-border text-foreground [&::-webkit-details-marker]:hidden">
-              <Menu className="size-5" aria-hidden="true" />
-              <span className="sr-only">Menu</span>
-            </summary>
-            <nav
-              aria-label="Main"
-              className="absolute right-0 mt-2 w-56 rounded-xl border border-border bg-popover p-2 shadow-lg shadow-black/5"
-            >
-              <NavLinks
-                links={[...mainNav, { href: "/#waitlist", label: "Join the waitlist" }]}
-                className="flex flex-col"
-                linkClassName="block w-full py-2.5 text-base"
-              />
-            </nav>
-          </details>
+          <MobileMenu links={[...mainNav, { href: "/#waitlist", label: "Join the waitlist" }]} />
         </div>
       </div>
     </header>
