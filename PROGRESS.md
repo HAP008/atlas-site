@@ -60,7 +60,6 @@ Confirmed by Huzaifa on 2026-11-19:
 | Address confirmation (double opt-in) for the waitlist, or the launch-email wording in README | 7 |
 | Real screenshots and demo video into the Features slots (S10) | before 6 |
 | Lawyer/accountant review of all legal drafts; GDPR review | before 4 |
-| Pin GitHub Actions to commit SHAs (Dependabot already updates them weekly) | 6 |
 | Trademark check on "ATLAS" (S9) | before branding spend |
 | Raise HSTS from one day to a week, then a year with includeSubDomains (`site.config.ts` → `security.hsts`) | 2, after the move |
 | Rewrite the Privacy and Cookie pages' host paragraph for Cloudflare; keep Cloudflare Web Analytics, Rocket Loader and email obfuscation off (they inject scripts or rewrite HTML) | 2 |

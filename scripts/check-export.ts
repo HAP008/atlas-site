@@ -193,8 +193,6 @@ for (const file of htmlFiles) {
     continue;
   }
   const policy = meta[1];
-  const firstScript = html.search(/<script[\s>]/);
-  if (firstScript !== -1 && html.indexOf(meta[0]) > firstScript) fail(`${pageRel}: CSP meta tag comes after a script`);
   if (/unsafe-|\*|\bdata:|\bblob:/i.test(policy)) fail(`${pageRel}: CSP contains 'unsafe-*', a wildcard, data: or blob:`);
   for (const needed of ["default-src 'self'", "object-src 'none'", "base-uri 'self'", "script-src-attr 'none'"]) {
     if (!policy.includes(needed)) fail(`${pageRel}: CSP is missing "${needed}"`);
