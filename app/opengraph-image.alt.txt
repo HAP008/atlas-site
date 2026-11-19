@@ -1,0 +1,1 @@
+ATLAS: a personal assistant that lives on your Mac.
