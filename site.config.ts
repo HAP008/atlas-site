@@ -8,9 +8,23 @@
  *
  * Moving to a real domain is the one-line change marked below. The base path is
  * derived from SITE_URL, so "https://example.com" gives a base path of "".
+ * A build can also override it with the NEXT_PUBLIC_SITE_URL env var, so the same
+ * code can deploy to a second host during a move (and to localhost for header tests).
  */
 
-const SITE_URL = "https://hap008.github.io/atlas-site"; // ← the one line to change for a real domain
+const DEFAULT_SITE_URL = "https://hap008.github.io/atlas-site"; // ← the one line to change for a real domain
+
+function resolveSiteUrl(): string {
+  // Read literally so Next inlines the same value into server and browser code.
+  const override = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (!override) return DEFAULT_SITE_URL;
+  const url = new URL(override); // throws on a malformed value, which fails the build
+  const isLocal = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+  if (url.protocol !== "https:" && !isLocal) throw new Error("NEXT_PUBLIC_SITE_URL must use https.");
+  return override.replace(/\/+$/, "");
+}
+
+const SITE_URL = resolveSiteUrl();
 
 function basePathFrom(url: string): string {
   const path = new URL(url).pathname.replace(/\/+$/, "");
@@ -42,6 +56,15 @@ export const siteConfig = {
   },
   /** Days within which we act on a deletion request. Stated in Privacy. */
   deletionDays: 30,
+  /** Read by scripts/postbuild.ts when it writes the response headers and security.txt. */
+  security: {
+    /** One year. No `preload` flag is sent; that is a separate, hard-to-undo decision. */
+    hstsMaxAgeSeconds: 31_536_000,
+    /** YYYY-MM-DD, must be under a year away. The build warns 30 days before and fails once it has passed. */
+    securityTxtExpires: "2027-05-19",
+    /** Days within which we aim to reply to a security report. Stated on the Security page. */
+    reportReplyDays: 7,
+  },
 } as const;
 
 /**

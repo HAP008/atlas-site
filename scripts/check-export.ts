@@ -9,11 +9,14 @@
  *  3. Every legal page opens with the "Draft: not yet reviewed…" line.
  *  4. Pricing shows "launch pricing to be confirmed".
  *  5. No third-party scripts or stylesheets, and no email address other than the contact email.
+ *  6. Security: every page has a hash-based CSP covering each inline script, no 'unsafe-*',
+ *     no inline handlers or styles, no source maps, no eval; _headers and security.txt are complete.
  *
  * Reads the base path from out/robots.txt (written from site.config.ts), so it
  * never drifts from the real config.
  */
 
+import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
@@ -151,6 +154,82 @@ if (existsSync(pricingFile)) {
     fail("/pricing/ is missing the 'launch pricing to be confirmed' note");
   }
 } else fail("pricing page missing");
+
+// --- 6. security: CSP on every page, no inline handlers/styles, headers file, security.txt ----
+// Recomputes the script hashes independently of scripts/postbuild.ts, so a bug there is caught here.
+for (const file of htmlFiles) {
+  const html = readFileSync(file, "utf8");
+  const pageRel = relative(OUT, file);
+  const meta = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)"\/>/);
+  if (!meta) {
+    fail(`${pageRel}: no Content-Security-Policy meta tag`);
+    continue;
+  }
+  const policy = meta[1];
+  const firstScript = html.search(/<script[\s>]/);
+  if (firstScript !== -1 && html.indexOf(meta[0]) > firstScript) fail(`${pageRel}: CSP meta tag comes after a script`);
+  if (/unsafe-inline|unsafe-eval|unsafe-hashes/.test(policy)) fail(`${pageRel}: CSP contains an 'unsafe-*' keyword`);
+  for (const needed of ["default-src 'self'", "object-src 'none'", "base-uri 'self'", "form-action https://formspree.io", "script-src-attr 'none'"]) {
+    if (!policy.includes(needed)) fail(`${pageRel}: CSP is missing "${needed}"`);
+  }
+  for (const m of html.matchAll(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g)) {
+    const hash = `'sha256-${createHash("sha256").update(m[1], "utf8").digest("base64")}'`;
+    if (!policy.includes(hash)) fail(`${pageRel}: an inline script is not covered by the CSP`);
+  }
+  const body = html.replace(/<script[\s\S]*?<\/script>/g, "");
+  if (/<[^>]+\son[a-z]+\s*=/i.test(body)) fail(`${pageRel}: inline event handler attribute`);
+  if (/<[^>]+\sstyle\s*=/i.test(body)) fail(`${pageRel}: inline style attribute (blocked by style-src 'self')`);
+  if (/<style[\s>]/i.test(body)) fail(`${pageRel}: inline <style> element (blocked by style-src 'self')`);
+  if (/href="javascript:/i.test(body)) fail(`${pageRel}: javascript: link`);
+  for (const a of body.matchAll(/<a\s[^>]*href="https?:\/\/[^"]+"[^>]*>/g)) {
+    if (new URL(a[0].match(/href="([^"]+)"/)![1]).origin !== siteOrigin && !/rel="[^"]*noopener[^"]*noreferrer[^"]*"/.test(a[0])) {
+      fail(`${pageRel}: external link without rel="noopener noreferrer"`);
+    }
+  }
+}
+
+const allFiles = walk(OUT);
+for (const f of allFiles.filter((f) => f.endsWith(".map"))) fail(`source map shipped: ${relative(OUT, f)}`);
+for (const f of allFiles.filter((f) => f.endsWith(".js"))) {
+  if (/\beval\(|new Function\(/.test(readFileSync(f, "utf8"))) fail(`eval or new Function in ${relative(OUT, f)}`);
+}
+
+const headersPath = join(OUT, "_headers");
+if (!existsSync(headersPath)) fail("_headers file missing");
+else {
+  const headers = readFileSync(headersPath, "utf8");
+  for (const name of [
+    "Content-Security-Policy",
+    "Strict-Transport-Security",
+    "X-Content-Type-Options",
+    "X-Frame-Options",
+    "Referrer-Policy",
+    "Permissions-Policy",
+    "Cross-Origin-Opener-Policy",
+    "Cross-Origin-Resource-Policy",
+  ]) {
+    if (!headers.includes(`  ${name}: `)) fail(`_headers is missing ${name}`);
+  }
+  if (!headers.includes("frame-ancestors 'none'")) fail("_headers CSP is missing frame-ancestors 'none'");
+  if (/unsafe-inline|unsafe-eval/.test(headers)) fail("_headers contains an 'unsafe-*' keyword");
+  if (/preload/.test(headers.match(/Strict-Transport-Security: .*/)?.[0] ?? "")) fail("HSTS has `preload` (needs the owner's decision first)");
+  if (headers.split("\n").some((l) => l.length > 2000)) fail("_headers has a line over 2,000 characters");
+}
+
+const securityTxtPath = join(OUT, ".well-known", "security.txt");
+if (!existsSync(securityTxtPath)) fail(".well-known/security.txt missing");
+else {
+  const txt = readFileSync(securityTxtPath, "utf8");
+  if (!txt.includes(`Contact: mailto:${CONTACT_EMAIL}`)) fail("security.txt Contact doesn't match the site's contact email");
+  if (!txt.includes(`Policy: ${siteOrigin}${basePath}/security/`)) fail("security.txt Policy doesn't point at the Security page");
+  const expires = Date.parse(txt.match(/Expires: (\S+)/)?.[1] ?? "");
+  if (!(expires > Date.now())) fail("security.txt has expired or has no Expires line");
+  else if (expires - Date.now() > 366 * 86_400_000) fail("security.txt Expires is more than a year away");
+  const securityPage = join(OUT, "security", "index.html");
+  if (existsSync(securityPage) && !readFileSync(securityPage, "utf8").includes(CONTACT_EMAIL)) {
+    fail("Security page doesn't show the same contact as security.txt");
+  }
+}
 
 // --- report -----------------------------------------------------------------------------
 if (failures.length) {

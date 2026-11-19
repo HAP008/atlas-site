@@ -6,16 +6,17 @@
  * States: not connected (no endpoint) · idle · submitting · success · error, plus inline
  * errors for a bad email and the unchecked 18+ box. A filled honeypot shows success
  * but sends nothing, so bots learn nothing.
- * Depends on: lib/waitlist.ts (submit), shadcn Button/Input/Checkbox/Label.
+ * Depends on: lib/waitlist.ts (submit), shadcn Button/Input/Label. The 18+ box is a native
+ * checkbox: it works before JavaScript loads and needs no inline styles (strict CSP).
  * If the service is down, the visitor sees the error state with our email address.
  * Never logs anything: the email address is personal data.
  */
 
+import { Check } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -71,7 +72,7 @@ export function WaitlistForm({
   const [formError, setFormError] = useState<string | null>(null);
 
   const emailRef = useRef<HTMLInputElement>(null);
-  const ageRef = useRef<HTMLButtonElement>(null);
+  const ageRef = useRef<HTMLInputElement>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
   const successRef = useRef<HTMLHeadingElement>(null);
 
@@ -212,20 +213,31 @@ export function WaitlistForm({
 
       <div className="space-y-1.5">
         <div className="flex items-start gap-3">
-          <Checkbox
-            ref={ageRef}
-            id={ageId}
-            name="age_confirmed"
-            checked={ageConfirmed}
-            onCheckedChange={(value) => {
-              setAgeConfirmed(value === true);
-              if (fieldErrors.age) setFieldErrors((prev) => ({ ...prev, age: undefined }));
-            }}
-            aria-required="true"
-            aria-invalid={fieldErrors.age ? true : undefined}
-            aria-describedby={fieldErrors.age ? ageErrorId : undefined}
-            className={cn("mt-0.5 size-5 border-input", FOCUS_OUTLINE)}
-          />
+          <span className="relative mt-0.5 inline-flex size-5 shrink-0">
+            <input
+              ref={ageRef}
+              id={ageId}
+              type="checkbox"
+              name="age_confirmed"
+              value="yes"
+              checked={ageConfirmed}
+              onChange={(e) => {
+                setAgeConfirmed(e.target.checked);
+                if (fieldErrors.age) setFieldErrors((prev) => ({ ...prev, age: undefined }));
+              }}
+              required
+              aria-invalid={fieldErrors.age ? true : undefined}
+              aria-describedby={fieldErrors.age ? ageErrorId : undefined}
+              className={cn(
+                "peer size-5 cursor-pointer appearance-none rounded-[4px] border border-input bg-card transition-colors checked:border-primary checked:bg-primary aria-invalid:border-destructive",
+                FOCUS_OUTLINE,
+              )}
+            />
+            <Check
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 m-auto size-3.5 text-primary-foreground opacity-0 peer-checked:opacity-100"
+            />
+          </span>
           <Label htmlFor={ageId} className="text-sm leading-snug font-normal">
             I&apos;m 18 or older.
           </Label>
