@@ -40,6 +40,8 @@ export const siteConfig = {
   siteUrl: SITE_URL,
   basePath: basePathFrom(SITE_URL),
   locale: "en",
+  /** Public source repository. Its private "Report a vulnerability" form is a second security contact. */
+  repoUrl: "https://github.com/HAP008/atlas-site",
   /** Name of the build-time env var holding the waitlist form endpoint. Read literally in lib/waitlist-endpoint.ts. */
   waitlistEndpointEnvVar: "NEXT_PUBLIC_WAITLIST_ENDPOINT",
   /** The form service, named in the Privacy Policy. Update together with the endpoint. */

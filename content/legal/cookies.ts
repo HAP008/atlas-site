@@ -39,6 +39,7 @@ export const cookies: LegalDoc = {
       heading: "The waitlist form",
       blocks: [
         `When you submit the waitlist form, your browser sends your details to our form service, ${siteConfig.waitlistService.name}. The form tells your browser not to send cookies with that request.`,
+        `If JavaScript is switched off or hasn't loaded yet, the form takes you to ${siteConfig.waitlistService.name}'s own website to finish. That page is theirs, and their cookie rules apply there.`,
       ],
     },
     {

@@ -143,9 +143,10 @@ export function headersFile(inputs: HeaderInputs): string {
   return `${lines.join("\n")}\n`;
 }
 
-export function securityTxt(args: { siteUrl: string; contactEmail: string; expires: string }): string {
+export function securityTxt(args: { siteUrl: string; contactEmail: string; expires: string; repoUrl?: string }): string {
   return [
     `Contact: mailto:${args.contactEmail}`,
+    ...(args.repoUrl ? [`Contact: ${args.repoUrl}/security/advisories/new`] : []),
     `Expires: ${args.expires}T00:00:00.000Z`,
     "Preferred-Languages: en",
     `Canonical: ${args.siteUrl}/.well-known/security.txt`,
@@ -205,6 +206,7 @@ async function main() {
       siteUrl: siteConfig.siteUrl,
       contactEmail: siteConfig.contactEmail,
       expires: siteConfig.security.securityTxtExpires,
+      repoUrl: siteConfig.repoUrl,
     }),
   );
 

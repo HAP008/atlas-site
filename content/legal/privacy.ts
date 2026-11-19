@@ -143,7 +143,8 @@ export const privacy: LegalDoc = {
       id: "security",
       heading: "Keeping it safe",
       blocks: [
-        "The waitlist form sends your details straight from your browser to our form service over an encrypted (HTTPS) connection, without any cookies. This website has no database or server of its own, and it never writes your email address to logs.",
+        `The waitlist form sends your details straight from your browser to our form service over an encrypted (HTTPS) connection, and tells your browser not to send cookies with them. If JavaScript is switched off or hasn't loaded yet, the form takes you to ${siteConfig.waitlistService.name}'s own website to finish, and ${siteConfig.waitlistService.name}'s privacy and cookie rules apply there.`,
+        `This website has no database or server of its own, and it never writes your email address to logs. Every page tells your browser to run scripts and load fonts and images only from this website, and to send form data only to ${siteConfig.waitlistService.name}.`,
         "No system is perfectly secure. If something goes wrong that affects your data, we'll tell you and the authorities as the law requires.",
       ],
     },
