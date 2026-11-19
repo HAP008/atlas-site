@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
 /* Dark mode follows the visitor's system setting. No toggle, so nothing is stored. */

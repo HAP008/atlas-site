@@ -5,6 +5,7 @@
  *    SHA-256 hash of each inline script Next put on that page. No 'unsafe-inline', no nonce.
  * 2. Writes ./out/_headers (Cloudflare format): security headers for every route.
  * 3. Writes ./out/.well-known/security.txt from site.config.ts.
+ * 4. Copies ./NOTICES (third-party licences) to ./out/NOTICES.txt.
  *
  * Why the script rules live in a <meta> tag and not the header: Cloudflare limits each
  * _headers line to 2,000 characters, and the home page alone needs ~2,000 characters of
@@ -206,6 +207,11 @@ async function main() {
       expires: siteConfig.security.securityTxtExpires,
     }),
   );
+
+  // Publish the third-party notices next to the code they cover.
+  const notices = join(root, "NOTICES");
+  if (!existsSync(notices)) throw new Error("NOTICES not found. Run `npm run licences`.");
+  writeFileSync(join(out, "NOTICES.txt"), readFileSync(notices));
 
   process.stdout.write(
     `postbuild OK: CSP added to ${pages.length} pages (up to ${maxHashes} script hashes each), _headers and security.txt written\n`,
