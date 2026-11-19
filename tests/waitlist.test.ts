@@ -74,7 +74,10 @@ describe("parseWaitlistEndpoint", () => {
   });
   it("accepts https on the form service named in the Privacy Policy, and local http for testing", () => {
     expect(parseWaitlistEndpoint("https://formspree.io/f/test123")).toBe("https://formspree.io/f/test123");
-    expect(parseWaitlistEndpoint("http://localhost:4010/ok")).toBe("http://localhost:4010/ok");
+    expect(parseWaitlistEndpoint("http://localhost:4010/ok", { allowLocal: true })).toBe("http://localhost:4010/ok");
+  });
+  it("refuses a localhost endpoint unless the build explicitly opts in", () => {
+    expect(() => parseWaitlistEndpoint("http://localhost:4010/ok")).toThrow(/NEXT_PUBLIC_ALLOW_LOCAL_BUILD/);
   });
   it("fails loudly on a bad value", () => {
     expect(() => parseWaitlistEndpoint("not a url")).toThrow(/not a valid URL/);

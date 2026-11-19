@@ -6,6 +6,7 @@
  */
 
 import { render, screen, waitFor } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WaitlistForm } from "@/components/waitlist-form";
@@ -83,6 +84,25 @@ describe("WaitlistForm", () => {
     const form = screen.getByRole("form");
     expect(form).toHaveAttribute("method", "post");
     expect(form).toHaveAttribute("action", ENDPOINT);
+  });
+
+  it("before JavaScript runs, the browser itself enforces the email and the 18+ box", () => {
+    // What the static export ships: no novalidate, both fields required.
+    const html = renderToString(<WaitlistForm endpoint={ENDPOINT} />);
+    expect(html).not.toMatch(/novalidate/i);
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const form = doc.querySelector("form");
+    expect(form?.noValidate).toBe(false);
+    expect(doc.querySelector<HTMLInputElement>('input[type="email"]')?.required).toBe(true);
+    const box = doc.querySelector<HTMLInputElement>('input[type="checkbox"]');
+    expect(box?.required).toBe(true);
+    expect(box?.value).toBe("yes");
+    expect(form?.checkValidity()).toBe(false);
+  });
+
+  it("once JavaScript runs, it takes over validation so our own messages show", () => {
+    setup();
+    expect((screen.getByRole("form") as HTMLFormElement).noValidate).toBe(true);
   });
 
   it("the field is already marked invalid, with its error, at the moment it receives focus", async () => {

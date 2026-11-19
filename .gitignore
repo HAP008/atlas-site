@@ -43,3 +43,24 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated on every build by scripts/licences.ts and published at /NOTICES.txt
+/NOTICES
+
+# owner's private notes (account checklist, candidate names). Never commit.
+/private/
+
+# local secrets and tool state (Cloudflare Wrangler, keys, editors, logs)
+.dev.vars*
+.wrangler/
+*.key
+*.p12
+*.pfx
+*.jks
+credentials*.json
+service-account*.json
+.netlify/
+.claude/
+.vscode/
+.idea/
+*.log

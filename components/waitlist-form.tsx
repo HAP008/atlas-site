@@ -75,6 +75,14 @@ export function WaitlistForm({
   const ageRef = useRef<HTMLInputElement>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
   const successRef = useRef<HTMLHeadingElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // The server-rendered form keeps the browser's own checks (required email, required 18+ box),
+  // so they apply before JavaScript loads or when it is off. Once this code is running it
+  // switches them off and shows our own messages instead.
+  useEffect(() => {
+    if (formRef.current) formRef.current.noValidate = true;
+  });
 
   // Move focus to the confirmation so keyboard and screen-reader users hear it.
   useEffect(() => {
@@ -174,7 +182,7 @@ export function WaitlistForm({
       // service (never a GET to our own page, which would put the email in a URL and in logs).
       method="post"
       action={endpoint}
-      noValidate
+      ref={formRef}
       onSubmit={handleSubmit}
       aria-busy={submitting}
       aria-label="Join the ATLAS waitlist"

@@ -9,30 +9,26 @@ useDefault = true
 [[rules]]
 id = "formspree-endpoint"
 description = "A real Formspree form endpoint committed to the repo"
-regex = '''formspree\.io/f/[A-Za-z0-9]{6,}'''
-keywords = ["formspree.io/f/"]
+regex = '''(?i)formspree\.io/(?:f|forms|p/[0-9]+/f)/[a-z0-9]{6,}'''
+keywords = ["formspree.io/"]
 
   [[rules.allowlists]]
-  description = "Documentation placeholders and the fake endpoint used in tests"
+  description = "Documentation placeholders and the fake endpoint used in tests (whole match only)"
   regexTarget = "match"
-  regexes = ['''formspree\.io/f/(x{6,}|test[0-9a-z]*|abc123)''']
+  regexes = ['''(?i)^formspree\.io/f/(x{6,}|test[0-9]{0,6})$''']
 
 # CLAUDE.md §7.9: waitlist emails are personal data and must never be committed.
+# This is a tripwire, not a guarantee: obfuscated addresses ("name (at) host") are not caught.
 [[rules]]
 id = "email-address"
-description = "An email address other than the public contact or a test address"
+description = "An email address other than the public contact or a reserved test address"
 regex = '''[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}'''
 
   [[rules.allowlists]]
-  description = "The public contact address, reserved test domains and package@version strings"
+  description = "The public contact address and reserved test domains only"
   regexTarget = "match"
   regexes = [
     '''^huzaifapardiwala@gmail\.com$''',
-    '''@([a-z0-9-]+\.)*example\.[a-z.]+$''',
+    '''@([a-z0-9-]+\.)*example\.(com|net|org|co\.uk)$''',
     '''\.(test|invalid|example|tld)$''',
-    '''^(you|test|hello|dmarc)@''',
   ]
-
-  [[rules.allowlists]]
-  description = "Lockfile and generated notices contain package names, not people"
-  paths = ['''package-lock\.json$''', '''^NOTICES$''']

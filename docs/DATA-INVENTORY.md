@@ -55,11 +55,11 @@ Every factual claim about the **site** on the Privacy, Terms, Cookie, Acceptable
 | The form tells the browser not to send cookies | Privacy, Cookies | `credentials: "omit"` asserted in `tests/waitlist.test.ts`. True for the JavaScript path only; the pages now say that without JavaScript the form goes to Formspree's own site | Code (corrected this session) |
 | It never writes your email address to logs | Privacy | No `console.*` in site code (`tests/source-rules.test.ts`); console spy test; no-JavaScript submit is a POST, never a URL | Code |
 | No database or server of its own | Privacy, Security | Static export (`output: 'export'`); no API routes | Code |
-| You can't join without confirming 18+ | Terms, Privacy | `tests/waitlist-form.test.tsx`. Self-declared only; the pages don't claim verification | Code |
+| The form requires the 18+ confirmation | Terms, Privacy | `tests/waitlist-form.test.tsx`: required by the browser before JavaScript loads and by our code after. Self-declared only, and a script posting straight to Formspree can skip the form; the launch email goes only to `age_confirmed=yes`. The pages don't claim verification | Code + routine |
 | We collect nothing ourselves when you visit; the host logs IP addresses and we can't see them | Privacy, Cookies | GitHub's documentation (checked 2026-11-19). Must be rewritten for Cloudflare at the move | Provider doc |
 | Formspree records IP address, browser type, referring page and time | Privacy | Formspree's privacy policy (checked 2026-11-19) | Provider doc |
 | Formspree stores the sign-up and emails a copy to our inbox; Google hosts the inbox; GitHub hosts the site | Privacy | How the services work. ⚠️ Formspree part untested until connected | Provider doc |
-| Nobody else receives your data | Privacy | CSP `connect-src` and `form-action` allow only this site and formspree.io | Code |
+| Nobody else receives your data | Privacy | CSP `connect-src` and `form-action` allow only this site and the build's one Formspree form (nothing at all while the form isn't connected) | Code |
 | Data may be stored outside India, including the US | Privacy | Formspree and GitHub privacy policies | Provider doc |
 | We use your email only to announce the launch; no newsletters; never sold or rented | Privacy, Terms, form | Owner's practice. Nothing technical prevents misuse | Routine |
 | Deleted from Formspree within 30 days; whole list deleted within 30 days after launch; deletion requests done within 30 days including trash | Privacy, form success message | Deletion routine above. ⚠️ Not yet exercised | Routine |
@@ -68,7 +68,7 @@ Every factual claim about the **site** on the Privacy, Terms, Cookie, Acceptable
 | We'll email the waitlist before a change to how we use data | Privacy, Terms | Owner's practice | Routine |
 | We aim to reply to security reports within 7 days (an aim, not a guarantee) | Security | Owner's practice; one person. Value lives in `site.config.ts` | Routine |
 | We won't take legal action against good-faith reporters (for ourselves only) | Security | Owner's promise. **Flagged for the lawyer** | Routine + lawyer |
-| The same contact details are at `/.well-known/security.txt` | Security | `check:export` fails if the two differ or the file has expired | Code |
+| The same contact details are at `/.well-known/security.txt` | Security | `check:export` fails if the two differ; the file is re-stamped on every build and a monthly scheduled rebuild keeps it from expiring | Code |
 | Prices are placeholders; nothing can be bought | Pricing, Terms, Refunds | `site.config.ts` `status: "PLACEHOLDER"`; `check:export` requires the "to be confirmed" note; no checkout exists | Code |
 | Legal pages are drafts | Every legal page, footer | `check:export` requires the draft line at the top of each | Code |
 

@@ -5,14 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build && node scripts/postbuild.ts",
+    "build": "node scripts/licences.ts && next build && node scripts/postbuild.ts",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "check:export": "node scripts/check-export.ts",
     "licences": "node scripts/licences.ts",
-    "licences:check": "node scripts/licences.ts --check",
-    "verify": "npm run lint && npm run typecheck && npm test && npm run build && npm run check:export && npm run licences:check"
+    "verify": "npm run lint && npm run typecheck && npm test && npm run build && npm run check:export"
   },
   "engines": {
     "node": ">=24"
@@ -32,6 +31,7 @@
     "@testing-library/jest-dom": "^8.0.0",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.13",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^24.19.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",

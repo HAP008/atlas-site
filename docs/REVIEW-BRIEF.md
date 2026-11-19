@@ -61,7 +61,7 @@ The acceptance tests each step must pass are in `docs/SECURITY.md` §2. Please r
 - A re-test of the fixes for anything rated high.
 
 ## 7. Things we already know are weak
-- One person: no second reviewer, no on-call, account recovery depends on one email inbox.
+- One person: no second reviewer and no on-call.
 - Spam protection on the waitlist form is Formspree's server-side filter plus a honeypot; there is no CAPTCHA by choice (it would add a third-party script).
 - The 18+ check is a self-declaration.
 - Deletion of waitlist data is a manual routine.

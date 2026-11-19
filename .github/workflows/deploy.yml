@@ -11,6 +11,9 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  # Monthly rebuild: re-runs the dependency audit and keeps security.txt from expiring.
+  schedule:
+    - cron: "17 3 1 * *"
 
 # Read-only by default. Only the deploy job gets more, and only what Pages needs.
 permissions:
@@ -44,19 +47,23 @@ jobs:
           tar -xzf gitleaks.tar.gz -C "$RUNNER_TEMP" gitleaks
           rm gitleaks.tar.gz
           "$RUNNER_TEMP/gitleaks" git --redact --no-banner --config .gitleaks.toml .
+          # Self-test: the custom rules must still fire on a made-up endpoint and address.
+          printf 'https://formspree.io/f/%s\n%s@%s\n' "qwertyui" "someone" "gmail.com" > "$RUNNER_TEMP/canary.txt"
+          if "$RUNNER_TEMP/gitleaks" dir --redact --no-banner --config .gitleaks.toml "$RUNNER_TEMP/canary.txt" > "$RUNNER_TEMP/canary.log" 2>&1; then
+            echo "::error::gitleaks rules did not flag the canary file"; exit 1
+          fi
+          grep -q "leaks found: 2" "$RUNNER_TEMP/canary.log" || { echo "::error::expected exactly 2 canary findings"; cat "$RUNNER_TEMP/canary.log"; exit 1; }
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           cache: npm
 
-      - run: npm ci
+      # --ignore-scripts: no package may run code at install time. Nothing we ship needs it.
+      - run: npm ci --ignore-scripts
 
       - name: Audit shipped dependencies (fails on high or critical)
         run: npm audit --omit=dev --audit-level=high
-
-      - name: Licence check (allow-list, NOTICES up to date)
-        run: npm run licences:check
 
       - name: Lint
         run: npm run lint
@@ -67,12 +74,12 @@ jobs:
       - name: Unit tests
         run: npm test
 
-      - name: Build static export (adds the CSP, _headers and security.txt)
+      - name: Build static export (licence check, then adds the CSP, _headers, security.txt and NOTICES)
         run: npm run build
         env:
           NEXT_PUBLIC_WAITLIST_ENDPOINT: ${{ vars.NEXT_PUBLIC_WAITLIST_ENDPOINT }}
 
-      - name: Check export (links, drafts, CSP coverage, no third-party scripts)
+      - name: Check export (links, drafts, CSP covers only Next's own inline scripts, no third-party scripts)
         run: npm run check:export
 
       - name: Upload Pages artifact

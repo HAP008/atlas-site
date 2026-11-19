@@ -15,7 +15,7 @@ This repo is the website only. The app and licence service live in a separate pr
 - `docs/DATA-INVENTORY.md`: every item of personal data, and what backs each claim on the legal pages
 - `docs/INCIDENT-PLAN.md`: what to do when something goes wrong
 - `docs/REVIEW-BRIEF.md`: scope for the independent security review before launch
-- `NOTICES`: third-party licences (generated; published at `/NOTICES.txt`)
+- `NOTICES`: third-party licences, generated on every build (not committed) and published at `/NOTICES.txt`
 
 ## Run locally
 Needs Node 24 or newer.
@@ -30,9 +30,8 @@ npm run dev                  # http://localhost:3000/atlas-site/
 npm run lint            # ESLint
 npm run typecheck       # tsc --noEmit
 npm test                # Vitest: waitlist form states, source rules (no console, no any, no trackers)
-npm run build           # static export into ./out, then adds the CSP, _headers, security.txt and NOTICES.txt
+npm run build           # licence check + NOTICES, static export into ./out, then adds the CSP, _headers, security.txt
 npm run check:export    # links and anchors, draft lines, CSP covers every inline script, no third-party scripts
-npm run licences:check  # licence allow-list, NOTICES up to date (run `npm run licences` after changing dependencies)
 npm run verify          # all of the above in order
 ```
 CI also scans the full git history for secrets with gitleaks (`.gitleaks.toml`) and audits shipped dependencies.
@@ -41,7 +40,9 @@ CI also scans the full git history for secrets with gitleaks (`.gitleaks.toml`) 
 - Every page carries a hash-based Content Security Policy (no `unsafe-inline`), written into the HTML at build time by `scripts/postbuild.ts`. If you add an inline `style="…"` or an `onclick="…"`, the export check fails: use classes and React handlers.
 - `out/_headers` holds the response headers (HSTS, frame blocking, and so on). **They only take effect on Cloudflare.** GitHub Pages ignores the file.
 - Check a live site: `scripts/verify-live-headers.sh https://<domain>`. On github.io it fails by design.
-- `security.txt` expires on the date in `site.config.ts` → `security.securityTxtExpires`. The build warns 30 days before and fails after. Set a new date (under a year away) when it does.
+- `security.txt` is re-stamped on every build to expire 300 days later; a monthly scheduled CI run keeps it fresh.
+- HSTS starts at one day (`site.config.ts` → `security.hsts`). After the domain move, raise it to a week, then to `31_536_000` with `includeSubDomains: true`. The header script passes only at that final value.
+- Local test of the headers in Cloudflare's own runtime: `NEXT_PUBLIC_ALLOW_LOCAL_BUILD=1 NEXT_PUBLIC_SITE_URL=http://localhost:8788 npm run build`, then `npx wrangler pages dev out`. Local URLs are refused without that opt-in.
 - Details and the pre-launch gate: `docs/SECURITY.md`.
 
 ## Where things live

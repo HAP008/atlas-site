@@ -19,11 +19,15 @@
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { JSDOM } from "jsdom";
 
 const OUT = join(import.meta.dirname, "..", "out");
 const CONTACT_EMAIL = "huzaifapardiwala@gmail.com";
 const DRAFT_LINE = "Draft: not yet reviewed by a lawyer or accountant";
 const LEGAL_PAGES = ["privacy", "terms", "refunds", "cookies", "acceptable-use", "security"];
+
+/** form-action must be 'none' (waitlist not connected) or exactly one Formspree form, never the whole service. */
+const FORM_ACTION = /form-action (?:'none'|https:\/\/formspree\.io\/f\/[A-Za-z0-9]+)(?:;|$)/;
 
 const failures: string[] = [];
 const fail = (msg: string) => failures.push(msg);
@@ -156,7 +160,24 @@ if (existsSync(pricingFile)) {
 } else fail("pricing page missing");
 
 // --- 6. security: CSP on every page, no inline handlers/styles, headers file, security.txt ----
-// Recomputes the script hashes independently of scripts/postbuild.ts, so a bug there is caught here.
+// Uses a real HTML parser (jsdom) and its own hashing, independent of the regex in scripts/postbuild.ts,
+// so a bug or a missed <script> variant there is caught here.
+// Inline scripts must be one of the exact, data-only forms Next.js emits. Anything else means
+// something in the build injected code, and the page must not ship (its hash would be allow-listed).
+const NEXT_FLIGHT_PUSH = /^self\.__next_f\.push\(\[\d+,"(?:[^"\\]|\\.)*"\]\)$/;
+const NEXT_FLIGHT_INIT = "(self.__next_f=self.__next_f||[]).push([0])";
+const TURBOPACK_PUSH = /^\(globalThis\["TURBOPACK"\] \|\| \(globalThis\["TURBOPACK"\] = \[\]\)\)\.push\((\{[\s\S]*\})\);?\s*$/;
+function isKnownNextInlineScript(code: string): boolean {
+  if (code === NEXT_FLIGHT_INIT || NEXT_FLIGHT_PUSH.test(code)) return true;
+  const turbopack = code.match(TURBOPACK_PUSH);
+  if (!turbopack) return false;
+  try {
+    JSON.parse(turbopack[1]); // a plain data object, no code
+    return true;
+  } catch {
+    return false;
+  }
+}
 for (const file of htmlFiles) {
   const html = readFileSync(file, "utf8");
   const pageRel = relative(OUT, file);
@@ -168,13 +189,23 @@ for (const file of htmlFiles) {
   const policy = meta[1];
   const firstScript = html.search(/<script[\s>]/);
   if (firstScript !== -1 && html.indexOf(meta[0]) > firstScript) fail(`${pageRel}: CSP meta tag comes after a script`);
-  if (/unsafe-inline|unsafe-eval|unsafe-hashes/.test(policy)) fail(`${pageRel}: CSP contains an 'unsafe-*' keyword`);
-  for (const needed of ["default-src 'self'", "object-src 'none'", "base-uri 'self'", "form-action https://formspree.io", "script-src-attr 'none'"]) {
+  if (/unsafe-|\*|\bdata:|\bblob:/i.test(policy)) fail(`${pageRel}: CSP contains 'unsafe-*', a wildcard, data: or blob:`);
+  for (const needed of ["default-src 'self'", "object-src 'none'", "base-uri 'self'", "script-src-attr 'none'"]) {
     if (!policy.includes(needed)) fail(`${pageRel}: CSP is missing "${needed}"`);
   }
-  for (const m of html.matchAll(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g)) {
-    const hash = `'sha256-${createHash("sha256").update(m[1], "utf8").digest("base64")}'`;
+  if (!FORM_ACTION.test(policy)) fail(`${pageRel}: CSP form-action is not 'none' or one exact formspree.io form`);
+  const dom = new JSDOM(html);
+  const scripts = [...dom.window.document.querySelectorAll("script")];
+  for (const script of scripts.filter((s) => !s.hasAttribute("src"))) {
+    const code = script.textContent ?? "";
+    const hash = `'sha256-${createHash("sha256").update(code, "utf8").digest("base64")}'`;
     if (!policy.includes(hash)) fail(`${pageRel}: an inline script is not covered by the CSP`);
+    if (!isKnownNextInlineScript(code)) fail(`${pageRel}: unexpected inline script (not a form Next.js emits): ${code.slice(0, 60)}`);
+  }
+  if (html.includes("\r")) fail(`${pageRel}: contains carriage returns (browsers would hash inline scripts differently)`);
+  const metaEl = dom.window.document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+  if (metaEl?.parentElement?.tagName !== "HEAD" || dom.window.document.head.children[1] !== metaEl) {
+    fail(`${pageRel}: CSP meta tag is not the second element in <head> (right after the charset)`);
   }
   const body = html.replace(/<script[\s\S]*?<\/script>/g, "");
   if (/<[^>]+\son[a-z]+\s*=/i.test(body)) fail(`${pageRel}: inline event handler attribute`);
@@ -206,13 +237,15 @@ else {
     "Referrer-Policy",
     "Permissions-Policy",
     "Cross-Origin-Opener-Policy",
+    "Cross-Origin-Embedder-Policy",
     "Cross-Origin-Resource-Policy",
   ]) {
     if (!headers.includes(`  ${name}: `)) fail(`_headers is missing ${name}`);
   }
   if (!headers.includes("frame-ancestors 'none'")) fail("_headers CSP is missing frame-ancestors 'none'");
-  if (/unsafe-inline|unsafe-eval/.test(headers)) fail("_headers contains an 'unsafe-*' keyword");
-  if (/preload/.test(headers.match(/Strict-Transport-Security: .*/)?.[0] ?? "")) fail("HSTS has `preload` (needs the owner's decision first)");
+  if (/unsafe-/i.test(headers)) fail("_headers contains an 'unsafe-*' keyword");
+  if (!FORM_ACTION.test(headers.match(/Content-Security-Policy: .*/)?.[0] ?? "")) fail("_headers CSP form-action is not 'none' or one exact formspree.io form");
+  if (/preload/i.test(headers.match(/Strict-Transport-Security: .*/)?.[0] ?? "")) fail("HSTS has `preload` (needs the owner's decision first)");
   if (headers.split("\n").some((l) => l.length > 2000)) fail("_headers has a line over 2,000 characters");
 }
 

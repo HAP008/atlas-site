@@ -12,7 +12,7 @@ An incident is any of: the live site shows something we didn't publish; an accou
 
 1. **Write down the time and what you saw.** A note on paper is fine. Screenshots if you can. Don't trust memory later.
 2. **Stop the bleeding, in this order:**
-   - An account was taken over → from a device you trust, change that account's password, sign out all other sessions, then check 2FA and recovery settings still point to you. Start with **Gmail** (it resets everything else), then **GitHub**, then the registrar and Cloudflare.
+   - An account was taken over → from a device you trust, change that account's password, sign out all other sessions, then check 2FA and recovery settings still point to you. Start with the **email inbox**, then **GitHub**, then the registrar and Cloudflare.
    - The live site is wrong → roll back (§3).
    - A secret or an email address is in the repo → rotate it first (§2), clean up second. Assume it was copied the moment it was pushed.
    - The form is being abused → disable the form in Formspree (§2).

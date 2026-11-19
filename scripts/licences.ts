@@ -1,15 +1,18 @@
 /**
  * scripts/licences.ts: licence report for everything the site ships, and the NOTICES file.
  *
- *   npm run licences         writes ./NOTICES
- *   npm run licences:check   fails if a licence isn't on the allow-list or NOTICES is out of date (CI)
+ *   npm run licences   checks every licence against the allow-list and writes ./NOTICES
+ *
+ * It runs as the first step of `npm run build`, so NOTICES is always generated from the exact
+ * lockfile being built and is published at /NOTICES.txt. NOTICES is not committed: a committed
+ * copy went stale on every dependency update and turned Dependabot's pull requests red.
  *
  * "Production tree" = every package `npm ci --omit=dev` installs (from package-lock.json).
  * That is a superset of what ends up in the browser, so nothing shipped can be missed.
  * Two build-only CSS packages are added by hand because their output ships: tailwindcss and shadcn.
  * The font (Newsreader) is listed too.
  *
- * If a new dependency has an unknown or copyleft licence, CI fails here until someone decides.
+ * If a new dependency has an unknown or copyleft licence, the build fails here until someone decides.
  */
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -95,8 +98,7 @@ function render(pkgs: Pkg[]): string {
     "1. Font",
     "-------",
     "Newsreader | SIL Open Font License 1.1 | https://github.com/productiontype/Newsreader",
-    "Copyright 2020 The Newsreader Project Authors. Served from this site (self-hosted).",
-    "Licence text: https://openfontlicense.org/open-font-license-official-text/",
+    "Served from this site (self-hosted). Its full licence text is at the end of this file.",
     "",
     `2. Packages in the production tree (${shipped.length})`,
     "-----------------------------------------",
@@ -113,6 +115,9 @@ function render(pkgs: Pkg[]): string {
     "---------------------------------------",
     ...FULL_TEXT.flatMap((name) => ["", `--- ${name} ---`, licenceText(name)]),
     "",
+    "--- Newsreader (font) ---",
+    readFileSync(join(ROOT, "scripts", "licence-texts", "OFL-1.1-Newsreader.txt"), "utf8").trim(),
+    "",
   ].join("\n");
 }
 
@@ -121,14 +126,7 @@ const problems = pkgs
   .filter((p) => p.shipped && !ALLOWED.has(p.licence))
   .map((p) => `${p.name}@${p.version}: licence "${p.licence}" is not on the allow-list`);
 const text = render(pkgs);
-const check = process.argv.includes("--check");
-
-if (check) {
-  const current = existsSync(NOTICES_PATH) ? readFileSync(NOTICES_PATH, "utf8") : "";
-  if (current !== text) problems.push("NOTICES is out of date. Run `npm run licences` and commit the result.");
-} else {
-  writeFileSync(NOTICES_PATH, text);
-}
+if (problems.length === 0) writeFileSync(NOTICES_PATH, text);
 
 if (problems.length) {
   process.stderr.write(`licences FAILED\n${problems.map((p) => `  ✗ ${p}`).join("\n")}\n`);
@@ -137,5 +135,5 @@ if (problems.length) {
 const counts = new Map<string, number>();
 for (const p of pkgs.filter((x) => x.shipped)) counts.set(p.licence, (counts.get(p.licence) ?? 0) + 1);
 process.stdout.write(
-  `licences OK: ${pkgs.filter((p) => p.shipped).length} packages (${[...counts].map(([l, n]) => `${l} ${n}`).join(", ")}); ${pkgs.filter((p) => !p.shipped).length} build-only${check ? "; NOTICES is current" : "; NOTICES written"}\n`,
+  `licences OK: ${pkgs.filter((p) => p.shipped).length} packages (${[...counts].map(([l, n]) => `${l} ${n}`).join(", ")}); ${pkgs.filter((p) => !p.shipped).length} build-only; NOTICES written\n`,
 );
