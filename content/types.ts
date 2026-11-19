@@ -7,3 +7,16 @@
 export type InlineLink = { text: string; href: string };
 export type Inline = string | InlineLink;
 export type Paragraph = string | Inline[];
+
+/** A block in a legal page: a paragraph, a bullet list, or labelled fields (used for TBC details). */
+export type LegalBlock = Paragraph | { list: Paragraph[] } | { fields: { label: string; value: Paragraph }[] };
+
+export type LegalDoc = {
+  slug: string;
+  title: string;
+  description: string;
+  /** YYYY-MM-DD */
+  updated: string;
+  summary: Paragraph[];
+  sections: { id: string; heading: string; blocks: LegalBlock[] }[];
+};
