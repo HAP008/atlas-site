@@ -63,7 +63,9 @@ export const DENIED_FEATURES = [
   "xr-spatial-tracking",
 ] as const;
 
-const INLINE_SCRIPT = /<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g;
+// Finds the inline scripts in Next's own output. Not a general HTML parser: scripts/check-export.ts
+// re-checks every page with a real one (jsdom) and fails the build if this missed anything.
+const INLINE_SCRIPT = /<script(?![^>]*\ssrc\s*=)[^>]*>([\s\S]*?)<\/script\s*>/gi;
 
 export function inlineScriptHashes(html: string): string[] {
   const hashes = [...html.matchAll(INLINE_SCRIPT)].map(

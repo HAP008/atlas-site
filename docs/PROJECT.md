@@ -52,11 +52,11 @@ Free github.io. No domain yet (decided to postpone). Form service: free tier, TB
 
 ## 9. CURRENT STATE
 
-- **STEP:** 1, ~90%: everything built, reviewed and live at https://hap008.github.io/atlas-site/; waitlist form not yet connected to a real endpoint
-- **BUILT:** foundation, Home, Features, Pricing (placeholder), FAQ + setup, About, Changelog, six draft legal pages, waitlist form (all states tested against a stub), GitHub Pages deploy with lint/types/tests/audit/export checks in CI
-- **BROKEN / KNOWN ISSUES:** waitlist shows "not connected yet" until S1 is confirmed and the endpoint variable is set; robots.txt and sitemap sit under /atlas-site/ where crawlers don't look (fixed by a real domain); no CSP or security headers possible on GitHub Pages; hap008.github.io origin is shared with six other Pages repos on the account
-- **NEXT ACTION:** confirm S1 (Formspree), create the form, set the repo variable NEXT_PUBLIC_WAITLIST_ENDPOINT, redeploy, submit one real test sign-up
-- **BLOCKED ON:** Huzaifa: S1 confirmation and Formspree account. Real screenshots/video (S10) before launch.
+- **STEP:** 1 is ~90% (live; waitlist form not connected). Step 2: decision brief written, picks not yet confirmed, no domain. Security hardening (Prompt 3) done for everything that exists; response headers wait for the Cloudflare move.
+- **BUILT:** site and waitlist form (step 1); `docs/STEP2-DECISIONS.md`; hash-based CSP on every page (live); generated `_headers`, `security.txt`, `NOTICES.txt`; CI gates (secret scan, audit, licence allow-list, CSP coverage, pinned Actions, `--ignore-scripts`); GitHub secret scanning, push protection, Dependabot, CodeQL, branch protection; `docs/SECURITY.md`, `DATA-INVENTORY.md`, `INCIDENT-PLAN.md`, `REVIEW-BRIEF.md`.
+- **BROKEN / KNOWN ISSUES:** response headers (HSTS, frame blocking, nosniff, Referrer-Policy, Permissions-Policy, header CSP) are not sent: GitHub Pages can't; public header checker grades the site D until the move. Waitlist shows "not connected yet". `security.txt` sits under /atlas-site/, not the host root. Candidate domain names and (briefly) an unticked owner-account checklist were published in this public repo. One moderate advisory in a dev-only tool (minimatch via shadcn), not shipped.
+- **NEXT ACTION:** owner: turn on 2FA for Gmail then GitHub; confirm the step 2 picks and buy the domain. Then run Prompt 2 Part 2 (Cloudflare move) and `scripts/verify-live-headers.sh https://<domain>`.
+- **BLOCKED ON:** Huzaifa: step 2 picks and domain; Formspree form; 2FA; trademark search; lawyer for the DPDP breach duties and the Security page promise.
 
 ## 10. OPEN DECISIONS
 
@@ -67,11 +67,16 @@ Free github.io. No domain yet (decided to postpone). Form service: free tier, TB
 | S3 | Prices and currency | INR + USD / USD only | Decide at step 2 after cost estimates | OPEN |
 | S4 | Refund window | e.g. 7 / 14 / 30 days | Decide at step 2 with the merchant of record's rules | OPEN |
 | S5 | Free trial vs money-back | Trial / guarantee | Decide at step 2 | OPEN |
-| S6 | Merchant of record | Paddle, Lemon Squeezy, Dodo Payments, Polar, Whop | Verify India seller terms, fees and payout first | OPEN (step 2) |
-| S7 | Domain | Buy now / later | Must buy before launch (accounts, email, trust) | OPEN (step 2) |
+| S6 | Merchant of record | Paddle / Dodo Payments (Lemon Squeezy closed to new sellers 2026-11-16; Whop is not a full tax merchant of record; Polar unverified for Indian individuals) | Paddle. Verified 2026-11-19, `docs/STEP2-DECISIONS.md` §4 | PROPOSED, awaiting Huzaifa |
+| S7 | Domain | Porkbun `.app` / Zoho Domains `.com` or `.in` | Porkbun `.app`. The candidate names in the brief are public; buy now or choose another privately | PROPOSED, awaiting Huzaifa |
 | S8 | Business registration and tax | — | Ask an accountant before taking money | OPEN (step 2) |
 | S9 | Trademark check on "ATLAS" | — | Before spending on branding | OPEN |
 | S10 | Real screenshots and demo video | — | Needed before launch; slots exist | OPEN |
+| S11 | Hosting | Cloudflare (free) / Netlify Free | Cloudflare. See `docs/STEP2-DECISIONS.md` §2 | PROPOSED, awaiting Huzaifa |
+| S12 | Business email | Zoho Mail Lite (₹708/yr + GST) / Google Workspace Base | Zoho Mail Lite. §3 | PROPOSED, awaiting Huzaifa |
+| S13 | HSTS preload list | Join / don't join | Don't join yet. Hard to undo; decide after a month on the domain. A `.app` domain makes it moot | OPEN (step 2) |
+| S14 | CAPTCHA on the waitlist form | None / Google reCAPTCHA via Formspree | None: it needs Google's script and cookies on our page. Revisit only if spam gets through | DECIDED 2026-11-19 (see §11) |
+| S15 | Lawyer review items | — | DPDP breach-notification duties (`docs/INCIDENT-PLAN.md` §5); the Security page's "won't take legal action" promise; rights-request time limits | OPEN (before step 4) |
 
 ## 11. DECISION LOG
 
@@ -100,4 +105,19 @@ Append-only. Format: `DATE | DECISION | WHY`
 2026-11-19 | Waitlist build accepts only a formspree.io endpoint (local http for testing) | Keeps the Privacy Policy's "sent only to Formspree" true; changing service means changing config and policy together
 2026-11-19 | Form posts natively to the form service if JavaScript hasn't loaded | A default GET to our own page would put the email in a URL and server logs
 2026-11-19 | Waitlist data routine: delete each sign-up from Formspree within 30 days; Gmail copy is the list; deletion requests done within 30 days including trash | Formspree free plan stores submissions but only shows 30 days; makes the Privacy Policy promise keepable
+2026-11-19 | Step 2 picks proposed, not decided: Porkbun .app, Cloudflare, Zoho Mail Lite, Paddle | Verified costs in docs/STEP2-DECISIONS.md; owner hasn't confirmed
+2026-11-19 | Security hardening (Prompt 3) run before the Cloudflare move | Owner sent it; everything except live response headers could be built and verified now
+2026-11-19 | CSP is hash-based and built per page; script rules in a meta tag, everything else (with frame-ancestors) in _headers | Cloudflare caps a header line at 2,000 characters and a page can need more in hashes; the meta tag also protects on GitHub Pages today
+2026-11-19 | CSP allows only this build's own Formspree form; nothing while the form isn't connected | A whole-host allowance would let injected script post to any Formspree form
+2026-11-19 | No CAPTCHA on the waitlist form | Formspree's needs Google's reCAPTCHA script and cookies on our page; rely on its server-side filter, honeypot and restrict-to-domain
+2026-11-19 | HSTS ramps from one day to a year; includeSubDomains last; never preload from code | Browsers remember HSTS for the whole max-age; preload is hard to undo and is the owner's call
+2026-11-19 | 18+ box is a native checkbox and the form keeps browser validation until JavaScript runs | The shadcn checkbox needed an inline style the CSP blocks and couldn't be ticked without JavaScript; noValidate let the 18+ gate be skipped before hydration
+2026-11-19 | Secret scan is the gitleaks binary (MIT) in CI, checksum-pinned, with rules for Formspree endpoints and email addresses, self-tested each run | Runs on the runner only; gitleaks-action has a non-open licence
+2026-11-19 | CI installs with --ignore-scripts and the export check accepts only Next.js's own inline-script forms | A tampered build tool could otherwise get its script hashed into the CSP
+2026-11-19 | NOTICES is generated on every build, published at /NOTICES.txt, not committed | A committed copy turned every Dependabot pull request red
+2026-11-19 | security.txt is stamped at build time (300 days) and CI rebuilds monthly | A fixed expiry date would one day block every deploy, including a rollback
+2026-11-19 | GitHub: branch protection on main, secret scanning, push protection, Dependabot alerts and security updates, CodeQL, private vulnerability reporting switched on | Free on a public repo
+2026-11-19 | Owner account-protection status is tracked in a private, gitignored checklist, not in the repo | A public repo shouldn't say which protections are missing
+2026-11-19 | Localhost endpoints and site URLs need NEXT_PUBLIC_ALLOW_LOCAL_BUILD=1 | A stray local value can't end up in a real build
+2026-11-19 | Security page: reply time is an aim; the legal-action promise covers only ourselves; both flagged for the lawyer | One person can't guarantee a response time or bind other services
 ```

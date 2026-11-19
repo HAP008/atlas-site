@@ -122,15 +122,21 @@ for (const file of htmlFiles) {
   }
 
   // --- 5. no third-party scripts/styles, no stray emails --------------------------------
-  for (const s of html.matchAll(/<script[^>]*\ssrc="([^"]+)"/g)) {
-    if (new URL(s[1], `${siteOrigin}/`).origin !== siteOrigin) fail(`${pageRel}: third-party script ${s[1]}`);
+  // Parsed with a real HTML parser; regexes over HTML miss variants like <SCRIPT> or </script >.
+  const page = new JSDOM(html).window.document;
+  for (const el of page.querySelectorAll("script[src]")) {
+    const src = el.getAttribute("src") ?? "";
+    if (new URL(src, `${siteOrigin}/`).origin !== siteOrigin) fail(`${pageRel}: third-party script ${src}`);
   }
-  for (const l of html.matchAll(/<link[^>]*\shref="(https?:\/\/[^"]+)"[^>]*>/g)) {
-    if (/rel="(stylesheet|preconnect|dns-prefetch|preload)"/.test(l[0]) && new URL(l[1]).origin !== siteOrigin) {
-      fail(`${pageRel}: third-party resource ${l[1]}`);
+  for (const el of page.querySelectorAll("link[href]")) {
+    const href = el.getAttribute("href") ?? "";
+    const rel = (el.getAttribute("rel") ?? "").toLowerCase();
+    if (/stylesheet|preconnect|dns-prefetch|preload|modulepreload|prefetch/.test(rel) && new URL(href, `${siteOrigin}/`).origin !== siteOrigin) {
+      fail(`${pageRel}: third-party resource ${href}`);
     }
   }
-  const visible = html.replace(/<script[\s\S]*?<\/script>/g, "");
+  for (const el of page.querySelectorAll("script")) el.remove();
+  const visible = page.documentElement.outerHTML;
   for (const e of visible.matchAll(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g)) {
     if (e[0].toLowerCase() !== CONTACT_EMAIL) fail(`${pageRel}: unexpected email address in output: ${e[0]}`);
   }
@@ -207,14 +213,21 @@ for (const file of htmlFiles) {
   if (metaEl?.parentElement?.tagName !== "HEAD" || dom.window.document.head.children[1] !== metaEl) {
     fail(`${pageRel}: CSP meta tag is not the second element in <head> (right after the charset)`);
   }
-  const body = html.replace(/<script[\s\S]*?<\/script>/g, "");
-  if (/<[^>]+\son[a-z]+\s*=/i.test(body)) fail(`${pageRel}: inline event handler attribute`);
-  if (/<[^>]+\sstyle\s*=/i.test(body)) fail(`${pageRel}: inline style attribute (blocked by style-src 'self')`);
-  if (/<style[\s>]/i.test(body)) fail(`${pageRel}: inline <style> element (blocked by style-src 'self')`);
-  if (/href="javascript:/i.test(body)) fail(`${pageRel}: javascript: link`);
-  for (const a of body.matchAll(/<a\s[^>]*href="https?:\/\/[^"]+"[^>]*>/g)) {
-    if (new URL(a[0].match(/href="([^"]+)"/)![1]).origin !== siteOrigin && !/rel="[^"]*noopener[^"]*noreferrer[^"]*"/.test(a[0])) {
-      fail(`${pageRel}: external link without rel="noopener noreferrer"`);
+  const doc = dom.window.document;
+  for (const el of doc.querySelectorAll("*")) {
+    for (const attr of el.getAttributeNames()) {
+      if (/^on/i.test(attr)) fail(`${pageRel}: inline event handler attribute ${attr} on <${el.tagName.toLowerCase()}>`);
+    }
+  }
+  if (doc.querySelector("[style]")) fail(`${pageRel}: inline style attribute (blocked by style-src 'self')`);
+  if (doc.querySelector("style")) fail(`${pageRel}: inline <style> element (blocked by style-src 'self')`);
+  if (doc.querySelector("iframe, object, embed, base")) fail(`${pageRel}: <iframe>, <object>, <embed> or <base> element`);
+  for (const a of doc.querySelectorAll("a[href], area[href]")) {
+    const href = (a.getAttribute("href") ?? "").trim();
+    if (/^(javascript|data|vbscript):/i.test(href)) fail(`${pageRel}: ${href.slice(0, 20)} link`);
+    if (/^https?:/i.test(href) && new URL(href).origin !== siteOrigin) {
+      const rel = (a.getAttribute("rel") ?? "").toLowerCase().split(/\s+/);
+      if (!rel.includes("noopener") || !rel.includes("noreferrer")) fail(`${pageRel}: external link without rel="noopener noreferrer": ${href}`);
     }
   }
 }
